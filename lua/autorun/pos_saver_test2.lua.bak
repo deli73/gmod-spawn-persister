@@ -1,0 +1,78 @@
+function getPersistFile()
+  local PersistPage = GetConVarString("sbox_persist"):Trim()
+  if PersistPage == "" then return nil end
+  file.CreateDir("persist/spawnpoints")
+  return "persist/spawnpoints/" .. game.GetMap() .. "_" .. PersistPage .. ".txt"
+end
+
+function getBrickFromUID(uid)
+  return nil
+end
+
+--[[
+  Spawnpoint table format:
+  <SteamID> = special object ID created on spawn, ideally never overwritten
+]]--
+
+local playerSpawns = {}
+
+function savePlayerSpawns(...)
+  if not SERVER then return end
+  print("[SpawnPersister] Saving Spawns...")
+  local allPlayers = player.GetHumans() --[sic]
+  for _, p in ipairs(allPlayers) do
+    if p.SuperCoolBrickSpawn then
+      playerSpawns[p:SteamID()] = p.SuperCoolBrickSpawn.UID
+    end
+  end
+  -- write as json
+  file.Write(getPersistFile(), util.TableToJSON(playerSpawns))
+  print("[SpawnPersister] Spawns Saved!")
+end
+
+function loadPlayerSpawn(p)
+  for id, spawn in pairs(playerSpawns) do
+    if p:SteamID() == id then
+      local e = getBrickFromUID(id)
+      if e then
+        print("[SpawnPersister DEBUG] Setting Spawnpoint")
+        p.SuperCoolBrickSpawn = e
+        --idk what this part does but maybe it's important?
+        p:SetNetworkedVector( "SpawnPos", e:GetPos() + Vector(0, 0, 10) )
+      end
+    end
+  end
+end
+
+function getBrick()
+
+if SERVER and engine.ActiveGamemode() == "sandbox" then
+  --when persistence saving or player leaves, save spawns
+  --hook.Add("PersistenceSave", "spawn persister on save", savePlayerSpawns)
+  hook.Add("PlayerDisconnected", "spawn persister on disconnect", savePlayerSpawns)
+  -- on load, pull all player spawn data
+  hook.Add("PersistenceLoad", "spawn persister on load", function(name)
+    local data = file.Read(getPersistFile())
+    if not data then return end
+    playerSpawns = util.JSONToTable(data)
+    --playerSpawns = table.Merge(playerSpawns, pSpawns)
+  end)
+  -- when player first joins, load their persistent spawnpoint if any
+  -- hook.Add("PlayerInitialSpawn", "spawn persister on join", function(p, transition)
+  --   print("[SpawnPersister DEBUG] Player Initial Spawn")
+  --   p.needsSpawn = true
+  -- end)
+  hook.Add("PlayerSpawn", "spawn persister on spawn", function (p, transition)
+    if player.SuperCoolBrickSpawn and player.SuperCoolBrickSpawn:IsValid() then
+      player:SetPos( player.SuperCoolBrickSpawn:GetPos() + Vector( 0, 0, 15 ))
+    else
+      loadPlayerSpawn(p)
+    end
+  end)
+  -- add unique ID system to spawn bricks
+  hook.Add("OnEntityCreated", "spawn persister on brick create", function(e)
+    if e:IsValid() and e:GetClass() == "brickpoint" then
+
+    end
+  end)
+end
