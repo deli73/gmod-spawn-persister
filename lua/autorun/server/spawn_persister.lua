@@ -113,7 +113,7 @@ local function setPlayerSpawn(ply)
   local spawnTab = {}
   spawnTab["pos"] = ply:GetNW2Vector(SPAWN_POS)
   spawnTab["ang"] = ply:GetNW2Angle(SPAWN_ANG)
-  spawnTab["duck"] = ply:GetNW2Bool(SPAWN_ANG)
+  spawnTab["duck"] = ply:GetNW2Bool(SPAWN_DUCK)
   playerSpawns[ply:SteamID()] = spawnTab
   ply:PrintMessage(HUD_PRINTCENTER, "Set your spawn!")
   printMsg("Set player spawn for " .. ply:Name())
@@ -213,12 +213,7 @@ if engine.ActiveGamemode() == "sandbox" then
         --set location to spawn point at first
         ply:SetPos(spawn["pos"])
         ply:SetEyeAngles(spawn["ang"])
-        if spawn["duck"] then
-          ply:AddFlags(FL_DUCKING)
-        else
-          ply:RemoveFlags(FL_DUCKING)
-          ply:AddFlags(FL_ANIMDUCKING)
-        end
+        if spawn["duck"] then ply:AddFlags(FL_DUCKING) end
         break
       end
     end
@@ -233,12 +228,7 @@ if engine.ActiveGamemode() == "sandbox" then
           ply:SetEyeAngles(dc["ang"])
         end)
         --quack
-        if dc["duck"] then
-          ply:AddFlags(FL_DUCKING)
-        else
-          ply:RemoveFlags(FL_DUCKING)
-          ply:AddFlags(FL_ANIMDUCKING)
-        end
+        if dc["duck"] then ply:AddFlags(FL_DUCKING) end
         --if the player is colliding with a vehicle on load, just get in.
         --they probably logged out in it or something but even if not it's better to not be stuck.
         timer.Simple(1, function()
@@ -262,7 +252,10 @@ if engine.ActiveGamemode() == "sandbox" then
     local duck = ply:GetNW2Bool(SPAWN_DUCK)
     ply:SetPos(pos)
     ply:SetEyeAngles(ang)
-    if duck then ply:AddFlags(FL_DUCKING) end
+    ply:RemoveFlags(FL_DUCKING)
+    if duck then
+      ply:AddFlags(FL_DUCKING)
+    end
 
   end)
   --when player disconnects, auto-save their position if the relevant client convar is set
