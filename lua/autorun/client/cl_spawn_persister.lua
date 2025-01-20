@@ -20,7 +20,7 @@ if engine.ActiveGamemode() == "sandbox" then
   end)
 
   local auto_spawn = CreateClientConVar(
-    "spawnp_save_pos_dc", 0, true, true,
+    "spawnp_save_pos_dc", 1, true, true,
     "Automatically save position when disconnecting", 0, 1
   )
 
